@@ -12,20 +12,54 @@ datasource db {
   provider = "mongodb"
   url      = env("DATABASE_URL")
 }
+model User {
+  id         String   @id @default(auto()) @map("_id")
+  name       String
+  email      String   @unique
+  password   String
+  createdAt  DateTime @default(now())
+  updatedAt  DateTime @updatedAt
 
-
-model Savings {
-  id                    String   @id @default(auto()) @map("_id") @db.ObjectId
-  userId                String
-  totalBalance          Float    @default(0.0)
-  accounts              Account[]
+  mainAccounts MainAccount[]
 }
 
-model Account {
-  id                    String   @id @default(auto()) @map("_id") @db.ObjectId
-  schemeName            String
-  balance               Float    @default(0.0)
-  allocationPercentage  Float
-  savings               Savings? @relation(fields: [savingsId], references: [id])
-  savingsId             String?  @db.ObjectId
+model MainAccount {
+  id         String   @id @default(auto()) @map("_id")
+  userId     String
+  accountName String
+  balance    Float
+  currency   String
+  createdAt  DateTime @default(now())
+
+  user       User     @relation(fields: [userId], references: [id])
+  subAccounts SubAccount[]
+}
+
+model SubAccount {
+  id           String   @id @default(auto()) @map("_id")
+  mainAccountId String
+  goalName     String
+  allocatedAmount Float
+  targetAmount Float
+  createdAt    DateTime @default(now())
+
+  mainAccount MainAccount @relation(fields: [mainAccountId], references: [id])
+  transactions Transaction[]
+}
+
+model Transaction {
+  id           String   @id @default(auto()) @map("_id")
+  subAccountId String
+  type         TransactionType
+  amount       Float
+  description  String?
+  createdAt    DateTime @default(now())
+
+  subAccount SubAccount @relation(fields: [subAccountId], references: [id])
+}
+
+enum TransactionType {
+  DEPOSIT
+  WITHDRAWAL
+  TRANSFER
 }
