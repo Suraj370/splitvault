@@ -1,17 +1,32 @@
 const express = require('express');
 const cors = require('cors');
-const savingsRoutes = require('./routes/savingsRoutes');
-const { PrismaClient } = require('@prisma/client'); 
+const cookieParser = require('cookie-parser');
+const rateLimit = require('express-rate-limit');
+const accountsRoutes = require('./routes/accounts.routes');
+const authRoutes = require('./routes/auth.routes');
+const transactionRoutes = require('./routes/transaction.routes');
 
-const prisma = new PrismaClient();
 const app = express();
 
 // Middleware
+app.use(cookieParser());
 app.use(cors());
 app.use(express.json());
 
+// Global Rate Limiter: 100 requests per 15 minutes per IP
+const limiter = rateLimit({
+  windowMs: 15 * 60 * 1000, // 15 minutes
+  max: 100, // Limit each IP to 100 requests per windowMs
+  message: 'Too many requests from this IP, please try again later.',
+  standardHeaders: true, // Return rate limit info in the `RateLimit-*` headers
+  legacyHeaders: false, // Disable the `X-RateLimit-*` headers
+});
+app.use(limiter);
+
 // Routes
-app.use('/api/savings', savingsRoutes);
+app.use('/api/auth', authRoutes);
+app.use('/api/accounts', accountsRoutes);
+app.use('/api/transactions', transactionRoutes);
 
 const PORT = process.env.PORT || 5000;
 app.listen(PORT, () => console.log(`Server running on port ${PORT}`));
