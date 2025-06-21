@@ -62,7 +62,7 @@ const userService = {
       throw new ValidationError('Invalid credentials');
     }
 
-    const accessToken = jwtUtils.signToken({ userId: user.id }, '15m');
+    const accessToken = jwtUtils.signToken({ userId: user.id }, '3h');
     const refreshToken = jwtUtils.signToken({ userId: user.id }, '7d');
 
     await prisma.refreshToken.create({

@@ -3,215 +3,210 @@ const prismaUtils = require("../utils/prismaUtils");
 
 const transactionService = {
   async createTransaction({
-    subAccountId,
     type,
     amount,
-    description,
-    destinationSubAccountId,
-    userId,
+    accountId,
+    accountType,
+    toAccountId,
+    description = "",
   }) {
-    if (!subAccountId || !type || !amount) {
-      throw new ValidationError("Sub-account ID, type, and amount are required");
-    }
-
-    const validTypes = ['DEPOSIT', 'WITHDRAWAL', 'TRANSFER'];
-    if (!validTypes.includes(type)) {
-      throw new ValidationError("Invalid transaction type");
-    }
-
-    if (amount <= 0) {
-      throw new ValidationError("Amount must be greater than zero");
-    }
-
-    if (type === 'TRANSFER' && !destinationSubAccountId) {
-      throw new ValidationError("Destination sub-account ID is required for TRANSFER");
-    }
+    if (!amount || amount <= 0) throw new Error("Amount must be positive");
+    if (!type || !accountId || !accountType)
+      throw new Error("Missing required fields");
 
     const prisma = prismaUtils.getClient();
 
-    // Check if source sub-account exists and belongs to the user
-    const sourceSubAccount = await prisma.subAccount.findFirst({
-      where: {
-        id: subAccountId,
-        mainAccount: {
-          userId: userId,
-        },
-      },
-      select: {
-        id: true,
-        allocatedAmount: true,
-        mainAccount: {
-          select: {
-            id: true,
-            balance: true,
-            userId: true,
-          },
-        },
-      },
-    });
+    switch (type) {
+      case "DEPOSIT":
+        if (accountType !== "main")
+          throw new Error("DEPOSIT allowed only on main accounts");
+        break;
 
-    if (!sourceSubAccount) {
-      throw new NotFoundError("Source sub-account not found or unauthorized");
+      case "WITHDRAWAL":
+        if (!["main", "sub"].includes(accountType)) {
+          throw new Error("WITHDRAWAL allowed only on main or sub accounts");
+        }
+        break;
+
+      case "TRANSFER":
+        if (accountType !== "sub")
+          throw new Error("TRANSFER allowed only from sub accounts");
+        if (!toAccountId) throw new Error("TRANSFER requires toAccountId");
+        break;
+
+      case "ALLOCATION":
+        if (accountType !== "sub")
+          throw new Error("ALLOCATION allowed only on sub accounts");
+        break;
+
+      default:
+        throw new Error(`Invalid transaction type: ${type}`);
     }
 
-    if ((type === 'WITHDRAWAL' || type === 'TRANSFER') && sourceSubAccount.allocatedAmount < amount) {
-      throw new ValidationError("Insufficient funds in sub-account");
-    }
+    return await prisma.$transaction(async (tx) => {
+      let fromAccountId = null;
+      let actualToAccountId = null;
 
-    let destinationSubAccount;
-    if (type === 'TRANSFER') {
-      destinationSubAccount = await prisma.subAccount.findFirst({
-        where: {
-          id: destinationSubAccountId,
-          mainAccount: {
-            userId: userId,
-          },
-        },
-        select: {
-          id: true,
-          allocatedAmount: true,
-          mainAccount: {
-            select: {
-              id: true,
-            },
-          },
-        },
-      });
+      if (type === "ALLOCATION") {
+        const subAccount = await tx.subAccount.findUnique({
+          where: { id: accountId },
+          select: { mainAccountId: true },
+        });
 
-      if (!destinationSubAccount) {
-        throw new NotFoundError("Destination sub-account not found or unauthorized");
+        if (!subAccount)
+          throw new Error("Sub account not found for ALLOCATION");
+
+        fromAccountId = subAccount.mainAccountId;
+        actualToAccountId = accountId;
+
+        // ✅ Check if main account has enough balance
+        const mainAccount = await tx.mainAccount.findUnique({
+          where: { id: fromAccountId },
+          select: { balance: true },
+        });
+
+        if (mainAccount.balance < amount) {
+          throw new Error(
+            "Insufficient balance in main account for allocation"
+          );
+        }
       }
 
-      if (sourceSubAccount.id === destinationSubAccount.id) {
-        throw new ValidationError("Source and destination sub-accounts must be different");
-      }
-    }
+      if (type === "WITHDRAWAL") {
+        const model = accountType === "main" ? tx.mainAccount : tx.subAccount;
+        const account = await model.findUnique({
+          where: { id: accountId },
+          select: { balance: true },
+        });
 
-    const parsedAmount = parseFloat(amount);
-    const transaction = await prisma.$transaction(async (prisma) => {
-      const newTransaction = await prisma.transaction.create({
+        if (!account) throw new Error("Account not found for withdrawal");
+
+        if (account.balance < amount) {
+          throw new Error("Insufficient balance for withdrawal");
+        }
+      }
+
+      if (type === "TRANSFER") {
+        const fromSubAccount = await tx.subAccount.findUnique({
+          where: { id: accountId },
+          select: { balance: true },
+        });
+
+        if (!fromSubAccount)
+          throw new Error("Sub account not found for transfer");
+
+        if (fromSubAccount.balance < amount) {
+          throw new Error("Insufficient balance in sub account for transfer");
+        }
+      }
+
+      const transaction = await tx.transaction.create({
         data: {
-          subAccountId,
           type,
-          amount: parsedAmount,
+          amount,
           description,
-          createdAt: new Date(),
-        },
-        select: {
-          id: true,
-          subAccountId: true,
-          type: true,
-          amount: true,
-          description: true,
-          createdAt: true,
+          accountId,
+          accountType,
+          fromAccountId:
+            type === "TRANSFER"
+              ? accountId
+              : type === "ALLOCATION"
+              ? fromAccountId
+              : undefined,
+          toAccountId:
+            type === "TRANSFER"
+              ? toAccountId
+              : type === "ALLOCATION"
+              ? actualToAccountId
+              : undefined,
         },
       });
 
-      if (type === 'DEPOSIT') {
-        await prisma.subAccount.update({
-          where: { id: subAccountId },
-          data: { allocatedAmount: sourceSubAccount.allocatedAmount + parsedAmount },
-        });
-        await prisma.mainAccount.update({
-          where: { id: sourceSubAccount.mainAccount.id },
-          data: { balance: sourceSubAccount.mainAccount.balance + parsedAmount },
-        });
-      } else if (type === 'WITHDRAWAL') {
-        await prisma.subAccount.update({
-          where: { id: subAccountId },
-          data: { allocatedAmount: sourceSubAccount.allocatedAmount - parsedAmount },
-        });
-        await prisma.mainAccount.update({
-          where: { id: sourceSubAccount.mainAccount.id },
-          data: { balance: sourceSubAccount.mainAccount.balance - parsedAmount },
-        });
-      } else if (type === 'TRANSFER') {
-        await prisma.subAccount.update({
-          where: { id: subAccountId },
-          data: { allocatedAmount: sourceSubAccount.allocatedAmount - parsedAmount },
-        });
-        await prisma.subAccount.update({
-          where: { id: destinationSubAccountId },
-          data: { allocatedAmount: destinationSubAccount.allocatedAmount + parsedAmount },
-        });
+      // === Balance Update Logic ===
+      switch (type) {
+        case "DEPOSIT":
+          await tx.mainAccount.update({
+            where: { id: accountId },
+            data: { balance: { increment: amount } },
+          });
+          break;
+
+        case "WITHDRAWAL":
+          const withdrawModel =
+            accountType === "main" ? tx.mainAccount : tx.subAccount;
+          await withdrawModel.update({
+            where: { id: accountId },
+            data: { balance: { decrement: amount } },
+          });
+          break;
+
+        case "TRANSFER":
+          await tx.subAccount.update({
+            where: { id: accountId },
+            data: { balance: { decrement: amount } },
+          });
+
+          await tx.subAccount.update({
+            where: { id: toAccountId },
+            data: { balance: { increment: amount } },
+          });
+          break;
+
+        case "ALLOCATION":
+          await tx.mainAccount.update({
+            where: { id: fromAccountId },
+            data: { balance: { decrement: amount } },
+          });
+
+          await tx.subAccount.update({
+            where: { id: accountId },
+            data: { balance: { increment: amount } },
+          });
+          break;
       }
 
-      return newTransaction;
+      return transaction;
     });
-
-    return transaction;
   },
 
-  async getTransactionsBySubAccount(subAccountId, userId) {
-    if (!subAccountId || !userId) {
-      throw new ValidationError("Sub-account ID and user ID are required");
+
+  async getTransactionsByAccount(accountId) {
+    try {
+      const prisma = prismaUtils.getClient();
+
+      const transactions = await prisma.transaction.findMany({
+        where: {
+          accountId: accountId,
+          accountType: "sub",
+        },
+        orderBy: {
+          timestamp: "desc",
+        },
+      });
+      return transactions;
+    } catch (error) {
+      throw new ValidationError("Account ID is required");
+    }
+  },
+
+  async getTransactionById(transactionId) {
+    if (!transactionId) {
+      throw new ValidationError("Transaction ID  is required");
     }
 
     const prisma = prismaUtils.getClient();
-    const subAccount = await prisma.subAccount.findFirst({
-      where: {
-        id: subAccountId,
-        mainAccount: {
-          userId: userId,
-        },
-      },
+    const transaction = await prisma.transaction.findUnique({
+      where: { id: transactionId },
       select: {
         id: true,
-      },
-    });
-
-    if (!subAccount) {
-      throw new NotFoundError("Sub-account not found or unauthorized");
-    }
-
-    const transactions = await prisma.transaction.findMany({
-      where: { subAccountId },
-      select: {
-        id: true,
-        subAccountId: true,
         type: true,
         amount: true,
         description: true,
-        createdAt: true,
-      },
-      orderBy: { createdAt: 'desc' },
-    });
-
-    return transactions;
-  },
-
-  async getTransactionById(transactionId, userId) {
-    if (!transactionId || !userId) {
-      throw new ValidationError("Transaction ID and user ID are required");
-    }
-
-    const prisma = prismaUtils.getClient();
-    const transaction = await prisma.transaction.findFirst({
-      where: {
-        id: transactionId,
-        subAccount: {
-          mainAccount: {
-            userId: userId,
-          },
-        },
-      },
-      select: {
-        id: true,
-        subAccountId: true,
-        type: true,
-        amount: true,
-        description: true,
-        createdAt: true,
-        subAccount: {
-          select: {
-            goalName: true,
-            mainAccount: {
-              select: {
-                accountName: true,
-              },
-            },
-          },
-        },
+        timestamp: true,
+        accountId: true,
+        accountType: true,
+        fromAccountId: true,
+        toAccountId: true,
       },
     });
 

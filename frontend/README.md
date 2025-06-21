@@ -1,93 +1,12 @@
+# React + Vite
 
-This is the frontend client for the Savings Splitter app built using:
+This template provides a minimal setup to get React working in Vite with HMR and some ESLint rules.
 
-- React.js
-- TypeScript
-- Axios
-- React Query
-- TailwindCSS
+Currently, two official plugins are available:
 
----
+- [@vitejs/plugin-react](https://github.com/vitejs/vite-plugin-react/blob/main/packages/plugin-react) uses [Babel](https://babeljs.io/) for Fast Refresh
+- [@vitejs/plugin-react-swc](https://github.com/vitejs/vite-plugin-react/blob/main/packages/plugin-react-swc) uses [SWC](https://swc.rs/) for Fast Refresh
 
-## Setup Instructions
+## Expanding the ESLint configuration
 
-### 1. Clone the repository
-
-```bash
-git clone https://github.com/Suraj370/splitvault.git
-cd frontend
-```
-
-### 2. Install dependencies
-
-```bash
-npm install
-```
-
-### 3. Environment Variables
-
-Create a `.env` file at the root:
-
-```env
-VITE_API_BASE_URL="http://localhost:5000/api"
-```
-
-### 4. Start the React app
-
-```bash
-npm run dev
-```
-
----
-
-## Project Structure
-
-```bash
-/src
-  /components
-    /common
-    /account
-    /subaccount
-    /transactions
-    /layout
-  /pages or /routes
-  /services
-  /models
-  /context
-  /hooks
-  /utils
-  /styles
-  /assets
-App.jsx
-index.jsx
-```
-
----
-
-## Data Models (Frontend TypeScript Interfaces)
-
-- User
-- MainAccount
-- SubAccount
-- Transaction
-
-See `/models` folder for details.
-
----
-
-## Contribution
-
-1. Fork the repo
-2. Create a branch: `git checkout -b feature/your-feature-name`
-3. Commit your changes.
-4. Submit PR.
-
----
-
-## Notes
-
-- This project uses REST API to communicate with backend.
-- Axios is used to handle HTTP requests.
-- React Query handles caching, data fetching and state management.
-- TailwindCSS is used for rapid UI development.
-
+If you are developing a production application, we recommend using TypeScript with type-aware lint rules enabled. Check out the [TS template](https://github.com/vitejs/vite/tree/main/packages/create-vite/template-react-ts) for information on how to integrate TypeScript and [`typescript-eslint`](https://typescript-eslint.io) in your project.

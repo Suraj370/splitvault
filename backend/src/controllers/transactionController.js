@@ -1,18 +1,23 @@
 const { transactionService } = require("../services");
 
 const createTransaction = async (req, res) => {
-  const { subAccountId } = req.params;
-  const { type, amount, description, destinationSubAccountId } = req.body;
-  const userId = req.user.id; // Assuming authMiddleware sets req.user
-
   try {
-    const transaction = await transactionService.createTransaction({
-      subAccountId,
+    const {
       type,
       amount,
+      accountId,
+      accountType,
+      toAccountId,
+      description = "",
+    } = req.body;
+
+    const transaction = await transactionService.createTransaction({
+      type,
+      amount,
+      accountId,
+      accountType,
+      toAccountId,
       description,
-      destinationSubAccountId,
-      userId,
     });
     res
       .status(201)
@@ -23,14 +28,12 @@ const createTransaction = async (req, res) => {
   }
 };
 
-const getTransactionsBySubAccount = async (req, res) => {
-  const { subAccountId } = req.params;
-  const userId = req.user.id;
+const getTransactionsByAccount = async (req, res) => {
+  const { accountId } = req.params;
 
   try {
-    const transactions = await transactionService.getTransactionsBySubAccount(
-      subAccountId,
-      userId
+    const transactions = await transactionService.getTransactionsByAccount(
+      accountId
     );
     res.status(200).json({ transactions });
   } catch (error) {
@@ -41,12 +44,11 @@ const getTransactionsBySubAccount = async (req, res) => {
 
 const getTransactionById = async (req, res) => {
   const { transactionId } = req.params;
-  const userId = req.user.id;
 
   try {
     const transaction = await transactionService.getTransactionById(
       transactionId,
-      userId
+      req.user.id
     );
     res.status(200).json({ transaction });
   } catch (error) {
@@ -57,6 +59,6 @@ const getTransactionById = async (req, res) => {
 
 module.exports = {
   createTransaction,
-  getTransactionsBySubAccount,
+  getTransactionsByAccount,
   getTransactionById,
 };

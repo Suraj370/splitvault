@@ -5,11 +5,11 @@ const { NotFoundError } = require("../utils/errors");
 const accountController = {
   async createMainAccount(req, res) {
     try {
-      const { accountName, currency, initialBalance } = req.body;
+      const { name, currency, initialBalance } = req.body;
 
       const mainAccount = await accountService.createMainAccount({
         userId: req.user.id,
-        accountName,
+        name,
         currency,
         initialBalance,
       });
@@ -20,19 +20,7 @@ const accountController = {
     }
   },
 
-  async depositToMainAccount(req, res) {
-    try {
-      const { amount } = req.body;
-      const mainAccount = await accountService.depositToMainAccount(
-        req.params.mainAccountId,
-        amount
-      );
-      res.status(200).json({ status: "success", data: mainAccount });
-    } catch (error) {
-      const statusCode = error.statusCode || 400;
-      res.status(statusCode).json({ status: "error", message: error.message });
-    }
-  },
+
 
   async getMainAccounts(req, res) {
     try {
@@ -64,12 +52,14 @@ const accountController = {
 
   async createSubAccount(req, res) {
     try {
-      const { goalName, targetAmount, allocatedAmount } = req.body;
+      const { name, targetAmount, balance, scheme, description} = req.body;
       const subAccount = await accountService.createSubAccount({
         mainAccountId: req.params.mainAccountId,
-        goalName,
+        name,
         targetAmount,
-        allocatedAmount,
+        scheme,
+        balance,
+        description
       });
       res.status(201).json({ status: "success", data: subAccount });
     } catch (error) {
@@ -78,19 +68,6 @@ const accountController = {
     }
   },
 
-  async allocateFunds(req, res) {
-    try {
-      const { amount } = req.body;
-      const subAccount = await accountService.allocateFunds(
-        req.params.id,
-        amount
-      );
-      res.status(200).json({ status: "success", data: subAccount });
-    } catch (error) {
-      const statusCode = error.statusCode || 400;
-      res.status(statusCode).json({ status: "error", message: error.message });
-    }
-  },
 
   async getSubAccountsByMainAccountId(req, res) {
     try {
