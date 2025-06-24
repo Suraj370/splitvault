@@ -16,7 +16,7 @@ export const registerUser = (formData) => async (dispatch) => {
 export const loginUser = (formData) => async (dispatch) => {
   dispatch(setLoading());
   try {
-    const response = await axios.post(`${API_URL}/login`, formData);
+    const response = await axios.post(`${API_URL}/login`, formData, {withCredentials: true});
     dispatch(setUser(response.data.data));
   } catch (err) {
     dispatch(setError(err.response?.data?.message || 'Login failed'));

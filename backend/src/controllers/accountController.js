@@ -24,9 +24,11 @@ const accountController = {
 
   async getMainAccounts(req, res) {
     try {
+      
       const mainAccounts = await accountService.getMainAccountsByUserId(
         req.user.id
       );
+      
       res.status(200).json({ status: "success", data: mainAccounts });
     } catch (error) {
       const statusCode = error.statusCode || 500;

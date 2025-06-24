@@ -1,12 +1,16 @@
 import React, { useState } from "react";
 import { useDispatch, useSelector } from "react-redux";
-import { loginUser } from "../../features/auth/authActions";
+import { registerUser } from "../../../features/auth/authActions";
 
-function Login() {
+function Register() {
   const dispatch = useDispatch();
   const { loading, error } = useSelector((state) => state.auth);
 
-  const [form, setForm] = useState({ email: "", password: "" });
+  const [form, setForm] = useState({
+    name: "",
+    email: "",
+    password: "",
+  });
 
   const handleChange = (e) => {
     setForm({ ...form, [e.target.name]: e.target.value });
@@ -14,7 +18,7 @@ function Login() {
 
   const handleSubmit = (e) => {
     e.preventDefault();
-    dispatch(loginUser(form));
+    dispatch(registerUser(form));
   };
 
   return (
@@ -25,10 +29,25 @@ function Login() {
           className="flex flex-col gap-6 p-8"
         >
           <div>
-            <h3 className="text-3xl font-bold text-gray-800">Welcome Back </h3>
+            <h3 className="text-3xl font-bold text-gray-800">Create Account</h3>
             <p className="text-sm text-slate-500 mt-1">
-              Sign in to your account to manage your savings.
+              Start managing your savings today.
             </p>
+          </div>
+
+          <div className="flex flex-col">
+            <label htmlFor="name" className="text-sm font-medium text-gray-700 mb-1">
+              Full Name
+            </label>
+            <input
+              name="name"
+              type="text"
+              value={form.name}
+              onChange={handleChange}
+              className="p-3 rounded-lg border border-gray-300 focus:outline-none focus:ring-2 focus:ring-blue-500"
+              placeholder="John Doe"
+              required
+            />
           </div>
 
           <div className="flex flex-col">
@@ -64,11 +83,11 @@ function Login() {
           <button
             type="submit"
             disabled={loading}
-            className={`bg-blue-600 text-white font-semibold py-3 rounded-lg hover:bg-blue-700 transition ${
+            className={`bg-green-600 text-white font-semibold py-3 rounded-lg hover:bg-green-700 transition ${
               loading ? 'opacity-50 cursor-not-allowed' : ''
             }`}
           >
-            {loading ? 'Logging in...' : 'Login'}
+            {loading ? 'Creating account...' : 'Register'}
           </button>
 
           {error && (
@@ -82,4 +101,4 @@ function Login() {
   );
 }
 
-export default Login;
+export default Register;

@@ -71,7 +71,7 @@ model Transaction {
   fromAccountId  String?         // For transfers
   toAccountId    String?         // For transfers
 
-  accountId      String          // Main/Sub Account where the tx applies
+  accountId      String          
   accountType    AccountType
 
   mainAccount    MainAccount?    @relation("MainAccountTransactions", fields: [accountId], references: [id])

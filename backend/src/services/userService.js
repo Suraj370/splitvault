@@ -6,13 +6,13 @@ const prismaUtils = require("../utils/prismaUtils");
 const userService = {
   async register({ name, email, password }) {
     if (!name || !email || !password) {
-      throw new ValidationError('Name, email, and password are required');
+      throw new ValidationError("Name, email, and password are required");
     }
 
     const prisma = prismaUtils.getClient();
     const existingUser = await prisma.user.findUnique({ where: { email } });
     if (existingUser) {
-      throw new ValidationError('User with this email already exists');
+      throw new ValidationError("User with this email already exists");
     }
 
     const hashedPassword = await passwordUtils.hashPassword(password);
@@ -28,8 +28,8 @@ const userService = {
       select: { id: true, name: true, email: true },
     });
 
-    const accessToken = jwtUtils.signToken({ userId: user.id }, '15m');
-    const refreshToken = jwtUtils.signToken({ userId: user.id }, '7d');
+    const accessToken = jwtUtils.signToken({ userId: user.id }, "15m");
+    const refreshToken = jwtUtils.signToken({ userId: user.id }, "7d");
 
     await prisma.refreshToken.create({
       data: {
@@ -44,7 +44,7 @@ const userService = {
 
   async login({ email, password }) {
     if (!email || !password) {
-      throw new ValidationError('Email and password are required');
+      throw new ValidationError("Email and password are required");
     }
 
     const prisma = prismaUtils.getClient();
@@ -54,16 +54,19 @@ const userService = {
     });
 
     if (!user) {
-      throw new NotFoundError('User not found');
+      throw new NotFoundError("User not found");
     }
 
-    const isValidPassword = await passwordUtils.comparePassword(password, user.password);
+    const isValidPassword = await passwordUtils.comparePassword(
+      password,
+      user.password
+    );
     if (!isValidPassword) {
-      throw new ValidationError('Invalid credentials');
+      throw new ValidationError("Invalid credentials");
     }
 
-    const accessToken = jwtUtils.signToken({ userId: user.id }, '3h');
-    const refreshToken = jwtUtils.signToken({ userId: user.id }, '7d');
+    const accessToken = jwtUtils.signToken({ userId: user.id }, "15m");
+    const refreshToken = jwtUtils.signToken({ userId: user.id }, "7d");
 
     await prisma.refreshToken.create({
       data: {
@@ -73,12 +76,16 @@ const userService = {
       },
     });
 
-    return { user: { id: user.id, name: user.name, email }, accessToken, refreshToken };
+    return {
+      user: { id: user.id, name: user.name, email },
+      accessToken,
+      refreshToken,
+    };
   },
 
   async getUserById(userId) {
     if (!userId) {
-      throw new ValidationError('User ID is required');
+      throw new ValidationError("User ID is required");
     }
 
     const prisma = prismaUtils.getClient();
@@ -88,7 +95,7 @@ const userService = {
     });
 
     if (!user) {
-      throw new NotFoundError('User not found');
+      throw new NotFoundError("User not found");
     }
 
     return user;
@@ -96,27 +103,42 @@ const userService = {
 
   async refreshToken(refreshToken) {
     if (!refreshToken) {
-      throw new ValidationError('Refresh token is required');
+      throw new ValidationError("Refresh token is required");
+    }
+
+    // Verify token first to avoid unnecessary DB queries
+    let decoded;
+    try {
+      decoded = jwtUtils.verifyToken(refreshToken);
+    } catch (error) {
+      throw new ValidationError("Invalid refresh token");
     }
 
     const prisma = prismaUtils.getClient();
     const storedToken = await prisma.refreshToken.findFirst({
-      where: { token: refreshToken },
+      where: { token: refreshToken, userId: decoded.userId },
       include: { user: { select: { id: true, name: true, email: true } } },
     });
 
     if (!storedToken || storedToken.expiresAt < new Date()) {
-      throw new ValidationError('Invalid or expired refresh token');
+      throw new ValidationError("Invalid or expired refresh token");
     }
 
-    try {
-      const decoded = jwtUtils.verifyToken(refreshToken);
-      if (decoded.userId !== storedToken.userId) {
-        throw new ValidationError('Invalid refresh token');
-      }
+    const newAccessToken = jwtUtils.signToken(
+      { userId: storedToken.userId },
+      "15m"
+    );
 
-      const newAccessToken = jwtUtils.signToken({ userId: storedToken.userId }, '15m');
-      const newRefreshToken = jwtUtils.signToken({ userId: storedToken.userId }, '7d');
+    const now = new Date();
+    const timeLeftMs = storedToken.expiresAt - now;
+    const oneDayMs = 24 * 60 * 60 * 1000;
+    let newRefreshToken = refreshToken;
+
+    if (timeLeftMs < oneDayMs) {
+      newRefreshToken = jwtUtils.signToken(
+        { userId: storedToken.userId },
+        "7d"
+      );
 
       // Update refresh token in database
       await prisma.refreshToken.update({
@@ -127,15 +149,13 @@ const userService = {
           updatedAt: new Date(),
         },
       });
-
-      return {
-        user: storedToken.user,
-        accessToken: newAccessToken,
-        refreshToken: newRefreshToken,
-      };
-    } catch (error) {
-      throw new ValidationError('Invalid refresh token');
     }
+
+    return {
+      user: storedToken.user,
+      accessToken: newAccessToken,
+      refreshToken: newRefreshToken,
+    };
   },
 };
 

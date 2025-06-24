@@ -55,6 +55,7 @@ const accountService = {
           select: {
             id: true,
             name: true,
+            description: true,
             balance: true,
             targetAmount: true,
             scheme: true,
@@ -146,6 +147,7 @@ const accountService = {
       select: {
         id: true,
         name: true,
+        description: true,
         balance: true,
         targetAmount: true,
         createdAt: true,

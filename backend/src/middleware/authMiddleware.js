@@ -11,6 +11,7 @@ const authMiddleware = async (req, res, next) => {
     if (!authHeader || !authHeader.startsWith('Bearer ')) {
       throw new ValidationError('No token provided');
     }
+    
 
     const token = authHeader.split(' ')[1];
     const decoded = jwtUtils.verifyToken(token);

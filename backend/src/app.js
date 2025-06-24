@@ -10,7 +10,12 @@ const app = express();
 
 // Middleware
 app.use(cookieParser());
-app.use(cors());
+app.use(
+  cors({
+    origin: "http://localhost:5173", // ✅ Your frontend origin exactly
+    credentials: true,               // ✅ Allows cookies & Authorization header
+  })
+);
 app.use(express.json());
 
 // Global Rate Limiter: 100 requests per 15 minutes per IP

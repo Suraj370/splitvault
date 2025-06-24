@@ -1,6 +1,18 @@
 import { PiggyBank, Shield, TrendingUp } from "lucide-react";
-import { Outlet } from "react-router";
+import { Outlet } from "react-router-dom";
+import { useSelector } from "react-redux";
+import { useNavigate } from "react-router-dom";
+import { useEffect } from "react";
 export default function AuthLayout() {
+  const token = useSelector((state) => state.auth.token);
+  const navigate = useNavigate();
+
+  useEffect(() => {
+    if (token) {
+      navigate("/", { replace: true });
+    }
+  }, [token, navigate]);
+
   return (
     <div className="min-h-screen  p-4 ">
       <div className="w-full max-w-md mx-auto space-y-8 ">
@@ -35,10 +47,10 @@ export default function AuthLayout() {
             </div>
             <p className="text-xs text-gray-600">Track Growth</p>
           </div>
-          </div>
-
-          <Outlet />
         </div>
+
+        <Outlet />
       </div>
+    </div>
   );
 }
