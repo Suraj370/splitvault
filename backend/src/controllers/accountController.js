@@ -56,7 +56,7 @@ const accountController = {
     try {
       const { name, targetAmount, balance, scheme, description} = req.body;
       const subAccount = await accountService.createSubAccount({
-        mainAccountId: req.params.mainAccountId,
+        mainAccountId: req.params.accountId,
         name,
         targetAmount,
         scheme,

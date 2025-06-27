@@ -4,10 +4,7 @@ import Login from "../pages/auth/login/login";
 import Register from "../pages/auth/register/register";
 import PrivateRoute from "./PrivateRoute";
 import Home from "../pages/Home";
-import {
-  QueryClient,
-  QueryClientProvider,
-} from '@tanstack/react-query';
+import AccountDetails from "../pages/AccountDetails";
 const AppRoutes = () => {
   return (
     <Routes>
@@ -17,6 +14,7 @@ const AppRoutes = () => {
       </Route>
       <Route element={<PrivateRoute />}>
         <Route path="/" element={<Home />} />
+        <Route path="/accounts/:id" element={<AccountDetails />} />
       </Route>
     </Routes>
   );

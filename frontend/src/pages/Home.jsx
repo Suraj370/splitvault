@@ -1,16 +1,17 @@
-import React , {useState} from "react";
+import React, { useState } from "react";
 import { useSelector } from "react-redux";
 import Accounts from "../component/Accounts/Accounts";
-import CreateModal from "../component/Accounts/CreateModal";
+import CreateModal from "../component/modals/accounts/CreateModal";
+import WithdrawModal from "../component/modals/accounts/WithdrawModal";
 function Home() {
   const user = useSelector((state) => state.auth.user);
 
-    const [showModal, setShowModal] = useState(false);
-  
-    const handleAddAclick = () => setShowModal(true);
-    const handleClose = () => setShowModal(false);
+  const [showCreateModal, setCreateModal] = useState(false);
 
-  
+  const [showWithdrawModal, setShowWithdrawModal] = useState(false);
+
+  const openCreateModal = () => setCreateModal(true);
+  const handleClose = () => setCreateModal(false);
 
   return (
     <>
@@ -29,23 +30,23 @@ function Home() {
         <section className="flex flex-col mt-2 space-y-6  ">
           <div className="flex items-center justify-between mb-6">
             <h2 className=" font-semibold text-3xl "> Your Savings</h2>
-            <button onClick={handleAddAclick} className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors">
+            <button
+              onClick={openCreateModal}
+              className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors"
+            >
               Add New Account
             </button>
-            {
-              showModal && (
-                <CreateModal
-                  onClose={handleClose}
-                />
-              )
-            }
           </div>
 
           <div className=" grid grid-cols-1 gap-6">
-           <Accounts />
+            <Accounts />
           </div>
         </section>
       </main>
+      {
+        showCreateModal && <CreateModal onClose={handleClose} />
+      }
+    
     </>
   );
 }

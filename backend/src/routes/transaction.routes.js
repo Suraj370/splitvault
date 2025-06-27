@@ -9,4 +9,6 @@ router.get('/subaccount/:accountid', authMiddleware, transactionController.getTr
 
 router.get('/:transactionId', authMiddleware, transactionController.getTransactionById);
 
+router.get('/subaccounts/:mainAccountId', authMiddleware, transactionController.getAllSubAccountTransactions);
+
 module.exports = router;

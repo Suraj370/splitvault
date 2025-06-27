@@ -9,7 +9,7 @@ router.get('/', authMiddleware, accountController.getMainAccounts);
 router.get('/:id', authMiddleware, accountController.getMainAccountById);
 
 // Sub-Account Routes
-router.post('/:mainAccountId/sub-accounts', authMiddleware, accountController.createSubAccount);
+router.post('/:accountId/sub-accounts', authMiddleware, accountController.createSubAccount);
 router.get('/:mainAccountId/sub-accounts', authMiddleware, accountController.getSubAccountsByMainAccountId);
 
 module.exports = router;

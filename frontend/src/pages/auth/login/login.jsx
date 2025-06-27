@@ -3,7 +3,6 @@ import { useDispatch, useSelector } from "react-redux";
 import { loginUser } from "../../../features/auth/authActions";
 import { Link } from "react-router-dom";
 
-
 function Login() {
   const dispatch = useDispatch();
   const { loading, error } = useSelector((state) => state.auth);
@@ -38,6 +37,7 @@ function Login() {
               Email Address
             </label>
             <input
+              id="email"
               name="email"
               type="email"
               value={form.email}
@@ -56,6 +56,7 @@ function Login() {
               Password
             </label>
             <input
+              id="password"
               name="password"
               type="password"
               value={form.password}

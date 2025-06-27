@@ -1,7 +1,7 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { useDispatch } from 'react-redux';
 import { PiggyBank, User, Bell } from 'lucide-react';
-import { logout } from '../features/auth/authSlice'; // adjust path as needed
+import { logout } from '../../features/auth/authSlice'; // adjust path as needed
 
 function Navbar() {
   const [open, setOpen] = useState(false);

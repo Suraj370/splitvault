@@ -2,12 +2,7 @@ const { ValidationError, NotFoundError } = require("../utils/errors");
 const prismaUtils = require("../utils/prismaUtils");
 
 const accountService = {
-  async createMainAccount({
-    userId,
-    name,
-    currency,
-    initialBalance = 0,
-  }) {
+  async createMainAccount({ userId, name, currency, initialBalance = 0 }) {
     if (!userId || !name || !currency) {
       throw new ValidationError(
         "User ID, account name, and currency are required"
@@ -39,8 +34,6 @@ const accountService = {
 
     return mainAccount;
   },
-
-
 
   async getMainAccountsByUserId(userId) {
     if (!userId) {
@@ -90,6 +83,10 @@ const accountService = {
       throw new NotFoundError("Main account not found");
     }
 
+    if (balance > targetAmount) {
+      balance = targetAmount;
+    }
+
     if (balance > mainAccount.balance) {
       throw new ValidationError(
         "Allocated amount exceeds main account balance"
@@ -125,8 +122,6 @@ const accountService = {
 
     return subAccount;
   },
-
-
 
   async getSubAccountsByMainAccountId(mainAccountId) {
     if (!mainAccountId) {

@@ -189,6 +189,50 @@ const transactionService = {
     }
   },
 
+  async getAllSubAccountTransactions(mainAccountId) {
+    try {
+      const prisma = prismaUtils.getClient();
+
+      // Find all sub-accounts linked to the main account
+      const subAccounts = await prisma.subAccount.findMany({
+        where: { mainAccountId },
+        select: { id: true },
+      });
+
+      if (!subAccounts.length) {
+        return []; // No sub-accounts found, so no transactions
+      }
+
+      const subAccountIds = subAccounts.map((sa) => sa.id);
+
+      // Fetch all transactions for those sub-accounts
+      const transactions = await prisma.transaction.findMany({
+        where: {
+          accountId: {
+            in: subAccountIds,
+          },
+          accountType: "sub",
+        },
+        include: {
+          subAccount: {
+            select: {
+              name: true,
+            },
+          },
+        },
+        orderBy: {
+          timestamp: "desc",
+        },
+      });
+      
+      return transactions;
+    } catch (error) {
+      // It's better to log the actual error for debugging
+      console.error("Error retrieving sub-account transactions:", error);
+      throw new Error("Could not retrieve sub-account transactions.");
+    }
+  },
+
   async getTransactionById(transactionId) {
     if (!transactionId) {
       throw new ValidationError("Transaction ID  is required");

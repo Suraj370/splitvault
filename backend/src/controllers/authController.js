@@ -54,7 +54,6 @@ exports.refreshToken = async (req, res) => {
       accessToken,
       refreshToken: newRefreshToken,
     } = await userService.refreshToken(refreshToken);
-    console.log(`New refresh token: ${newRefreshToken}`);
     
     res.cookie("refreshToken", newRefreshToken, {
       httpOnly: true,

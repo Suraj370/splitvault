@@ -57,8 +57,24 @@ const getTransactionById = async (req, res) => {
   }
 };
 
+const getAllSubAccountTransactions = async (req, res) => {
+  try {
+    const { mainAccountId } = req.params;
+    const transactions = await transactionService.getAllSubAccountTransactions(
+      mainAccountId
+    );
+   
+
+    res.status(200).json({ transactions });
+  } catch (error) {
+    const statusCode = error.statusCode || 500;
+    res.status(statusCode).json({ status: "error", message: error.message });
+  }
+};
+
 module.exports = {
   createTransaction,
   getTransactionsByAccount,
   getTransactionById,
+  getAllSubAccountTransactions,
 };
